@@ -1,6 +1,8 @@
 unixsocket
 ==========
 
+This uses [libuv](https://libuv.org/) to write strings to a UNIX domain socket and read responses back as strings.
+
 ### Installation
 
 ```scala
