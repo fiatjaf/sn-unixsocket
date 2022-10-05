@@ -3,9 +3,9 @@ package unixsocket
 import scala.Byte.byte2int
 import scala.collection.mutable.HashSet
 import scala.concurrent.Promise
+import scala.scalanative.unsigned._
 import scala.scalanative.unsafe._
 import scala.scalanative.libc.{stdlib, string}
-import scalanative.unsigned.UnsignedRichLong
 import scala.scalanative.loop.EventLoop.loop
 
 import scala.scalanative.loop.LibUV.{uv_read_start as _, _}
@@ -57,9 +57,9 @@ private class Call(_path: String, _payload: String) {
 }
 
 object UnixSocket {
-  final val UV_EOF = -4095
+  private final val UV_EOF = -4095
 
-  val calls = HashSet.empty[Call]
+  private val calls = HashSet.empty[Call]
 
   def call(path: String, payload: String): Promise[String] = {
     val call = new Call(path, payload)
@@ -83,7 +83,7 @@ object UnixSocket {
     call.result
   }
 
-  val onConnect: ConnectCB = (connect: ConnectReq, status: CInt) => {
+  private val onConnect: ConnectCB = (connect: ConnectReq, status: CInt) => {
     calls.find(c => c.connect == connect) match {
       case Some(call) =>
         status match {
@@ -120,7 +120,7 @@ object UnixSocket {
     ()
   }
 
-  val onWrite: WriteCB = (write: WriteReq, status: CInt) => {
+  private val onWrite: WriteCB = (write: WriteReq, status: CInt) => {
     calls.find(c => c.write == write) match {
       case Some(call) =>
         status match {
@@ -140,14 +140,14 @@ object UnixSocket {
     ()
   }
 
-  val onAlloc: PipeAllocCB =
+  private val onAlloc: PipeAllocCB =
     (_: PipeHandle, suggested_size: CSize, buf: Ptr[Buffer]) => {
       // this is called in a loop with an empty buffer, we must allocate some bytes for it
       buf._1 = stdlib.malloc(64L.toULong)
       buf._2 = 64L.toULong
     }
 
-  val onRead: PipeReadCB =
+  private val onRead: PipeReadCB =
     (pipe: PipeHandle, nread: CSSize, buf: Ptr[Buffer]) => {
       calls.find(c => c.pipe == pipe) match {
         case Some(call) => {
@@ -181,6 +181,7 @@ object UnixSocket {
                   } else {
                     // otherwise there is more stuff to be read, we'll be called again
                   }
+
                 }
               }
             }
@@ -206,7 +207,7 @@ object UnixSocket {
       }
     }
 
-  val onClose: CloseCB = (pipe: PipeHandle) => {
+  private val onClose: CloseCB = (pipe: PipeHandle) => {
     calls.find(c => c.pipe == pipe) match {
       case Some(call) => {
         // after closing the pipe we free all the memory
