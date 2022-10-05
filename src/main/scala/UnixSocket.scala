@@ -143,8 +143,8 @@ object UnixSocket {
   private val onAlloc: PipeAllocCB =
     (_: PipeHandle, suggested_size: CSize, buf: Ptr[Buffer]) => {
       // this is called in a loop with an empty buffer, we must allocate some bytes for it
-      buf._1 = stdlib.malloc(64L.toULong)
-      buf._2 = 64L.toULong
+      buf._1 = stdlib.malloc(640L.toULong)
+      buf._2 = 640L.toULong
     }
 
   private val onRead: PipeReadCB =
